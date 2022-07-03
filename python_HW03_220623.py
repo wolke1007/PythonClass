@@ -5,7 +5,6 @@ import random
 def user_input_answer() -> list:
     # user_list -> correct -> return list with numbers
     # user_list -> wrong -> return empty list
-
     try:
         user_list = list(map(int, input("請輸入4個整數：")))
     except:
