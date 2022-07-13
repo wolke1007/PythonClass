@@ -14,7 +14,7 @@ movie_name = "中文片名:"
 movie_eng_name = "英文片名:"
 movie_res_time = "上映日期:"
 response = requests.get("https://movies.yahoo.com.tw/movie_intheaters.html")
-movie_list=[{}]
+movie_list=[]
 soup = BeautifulSoup(response.text, 'lxml')
 info_items = soup.find_all('div', 'release_info')
 for item in info_items:
