@@ -48,9 +48,7 @@ try:
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
-    response = requests.get(
-        "https://biggo.com.tw/s/CLIO%E7%8F%82%E8%8E%89%E5%A5%A7%20%E5%87%9D%E6%99%82%E7%BE%8E%E8%82%8C%E9%98%B2%E6%B2%BE%E6%9F%93%E6%9F%94%E9%9C%A7%E7%B2%89%E5%BA%95%E6%B6%B2%20%E7%B2%BE%E5%B7%A7%E7%89%88/?&m=cp&c[]=tw_pec_books&c[]=tw_ec_pchome24h&c[]=tw_ec_cosmed&c[]=tw_ec_watsons",
-        headers=headers)
+    response = requests.get(driver.current_url,headers=headers)
     cosmetic_list = []
     soup = BeautifulSoup(response.text, 'lxml')
     info_items = soup.find_all('div', 'col-12 product-row')
