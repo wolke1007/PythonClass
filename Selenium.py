@@ -55,8 +55,8 @@ try:
     info_items = soup.find_all('div', 'col-12 product-row ')
     for item in info_items:
         name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-        price = item.find('div', 'd-flex flex-wrap align-items-center').a.text.strip()
-        EC = item.find('div', 'store-name-wrap').text.strip()
+        price = item.find('div', 'price').span.text.strip()
+        EC = item.find('div', 'store-name-wrap').span.text.strip()
         movie_info = dict(品名=name, 價格=price, 通路=EC)
         movie_list.append(movie_info)
     #    movie.execute('INSERT INTO MOVIE_INFO VALUES(?,?,?)', (name,english_name,release_time))
