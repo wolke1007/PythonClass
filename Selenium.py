@@ -21,11 +21,6 @@ def wait_until(xpath: str):
     )
     return element
 
-# def wait_until_momo(xpath: str):
-#     element = WebDriverWait(driver,10).until(
-#         EC.element_to_be_clickable("xpath", xpath)
-#     )
-
 try:
     search_input_field = wait_until("/html/body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[2]/input")
     search_input_field.send_keys("biggo")
@@ -51,6 +46,7 @@ try:
     # EC_search_button.click()
 
     response = requests.get(driver.current_url)
+    movie_list = []
     soup = BeautifulSoup(response.text, 'lxml')
     info_items = soup.find_all('div', 'col-12 product-row ')
     for item in info_items:
