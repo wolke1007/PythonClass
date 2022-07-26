@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import sqlite3
 
 
+
 options = Options()
 options.add_argument("--disable-notifications")
 
@@ -32,33 +33,37 @@ try:
     biggo_input.send_keys("CLIO珂莉奧 凝時美肌防沾染柔霧粉底液 精巧版")
     biggo_search_button = wait_until("/html/body/div[3]/div/div/form/div/input[2]")
     biggo_search_button.click()
-    # EC_select_momo = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[1]/div/label/span[2]")
-    # EC_select_momo.click()
-    # EC_select_pc24 = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[4]/div/label/span[2]")
-    # EC_select_pc24.click()
-    # EC_select_book = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[3]/div/label/span[2]")
-    # EC_select_book.click()
-    # EC_select_cosmed = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[6]/div/label/span[2]")
-    # EC_select_cosmed.click()
-    # EC_select_watsons = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[7]/div/label/span[2]")
-    # EC_select_watsons.click()
-    # EC_search_button = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[2]/div")
-    # EC_search_button.click()
+    EC_select_momo = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[1]/div/label/span[2]")
+    EC_select_momo.click()
+    EC_select_pc24 = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[4]/div/label/span[2]")
+    EC_select_pc24.click()
+    EC_select_book = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[3]/div/label/span[2]")
+    EC_select_book.click()
+    EC_select_cosmed = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[6]/div/label/span[2]")
+    EC_select_cosmed.click()
+    EC_select_watsons = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[7]/div/label/span[2]")
+    EC_select_watsons.click()
+    EC_search_button = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[2]/div")
+    EC_search_button.click()
 
-    response = requests.get(driver.current_url)
-    movie_list = []
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
+    response = requests.get(
+        "https://biggo.com.tw/s/CLIO%E7%8F%82%E8%8E%89%E5%A5%A7%20%E5%87%9D%E6%99%82%E7%BE%8E%E8%82%8C%E9%98%B2%E6%B2%BE%E6%9F%93%E6%9F%94%E9%9C%A7%E7%B2%89%E5%BA%95%E6%B6%B2%20%E7%B2%BE%E5%B7%A7%E7%89%88/?&m=cp&c[]=tw_pec_books&c[]=tw_ec_pchome24h&c[]=tw_ec_cosmed&c[]=tw_ec_watsons",
+        headers=headers)
+    cosmetic_list = []
     soup = BeautifulSoup(response.text, 'lxml')
-    info_items = soup.find_all('div', 'col-12 product-row ')
+    info_items = soup.find_all('div', 'col-12 product-row')
     for item in info_items:
         name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-        price = item.find('div', 'price').text.strip()
-        EC = item.find('div', 'store').text.strip()
-        movie_info = dict(品名=name, 價格=price, 通路=EC)
-        movie_list.append(movie_info)
+        price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
+        EC = item.find('div', 'store-name-wrap', 'store').text.strip()
+        cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
+        cosmetic_list.append(cosmetic_info)
     #    movie.execute('INSERT INTO MOVIE_INFO VALUES(?,?,?)', (name,english_name,release_time))
     #    conn.commit()
     #    print('{}({}) 上映日：{}'.format(name, english_name, release_time))
 
-    print(movie_list)
+    print(cosmetic_list)
 finally:
-    print("test")
+    print("Done")
