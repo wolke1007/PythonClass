@@ -41,23 +41,42 @@ try:
     EC_select_book.click()
     EC_select_cosmed = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[6]/div/label/span[2]")
     EC_select_cosmed.click()
-    EC_select_watsons = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[7]/div/label/span[2]")
-    EC_select_watsons.click()
+    # EC_select_watsons = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[7]/div/label/span[2]")
+    # EC_select_watsons.click()
     EC_search_button = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[2]/div")
     EC_search_button.click()
+
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
     response = requests.get(driver.current_url,headers=headers)
     cosmetic_list = []
     soup = BeautifulSoup(response.text, 'lxml')
+
+    btn_dropdowns = soup.find_all('div', 'multple_spec_btn _dropdown ml10')
+    if btn_dropdowns != None:
+        for btn_dropdown in btn_dropdowns:
+            muti_dropdown_btn = wait_until("/html/body/div[3]/div/div/div[2]/div[1]/div[3]/div[1]/div/div[2]/div[2]/div[1]/div")
+            muti_dropdown_btn.click()
+        response = requests.get(driver.current_url, headers=headers)
+        soup = BeautifulSoup(response.text, 'lxml')
+
     info_items = soup.find_all('div', 'col-12 product-row')
     for item in info_items:
-        name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-        price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
-        EC = item.find('div', 'store-name-wrap', 'store').text.strip()
-        cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
-        cosmetic_list.append(cosmetic_info)
+        muti_btn = item.find('div', 'multple_spec_btn _dropdown ml10')
+        if muti_btn != None:
+            main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
+            price = item.find('div', 'multple_spec_dropdown d-block _dropdown-menu','m_title_price')
+            sub_name = item.find('div','onerow' ,'tags')
+            EC = item.find('div', 'store-name-wrap', 'store').text.strip()
+            cosmetic_info = dict(品名=sub_name, 價格=price, 通路=EC)
+            cosmetic_list.append(cosmetic_info)
+        else:
+            name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
+            price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
+            EC = item.find('div', 'store-name-wrap', 'store').text.strip()
+            cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
+            cosmetic_list.append(cosmetic_info)
     #    movie.execute('INSERT INTO MOVIE_INFO VALUES(?,?,?)', (name,english_name,release_time))
     #    conn.commit()
     #    print('{}({}) 上映日：{}'.format(name, english_name, release_time))
