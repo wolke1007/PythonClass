@@ -7,13 +7,24 @@ import requests
 from bs4 import BeautifulSoup
 import sqlite3
 
-
-
 options = Options()
 options.add_argument("--disable-notifications")
 
+
 driver = webdriver.Chrome('./chromedriver', chrome_options=options)
-driver.get("https://www.google.com/")
+
+ECs = {  # 所有通路
+    'pchome':  "tw_ec_pchome24h",
+    'momo': "tw_pec_momoshop"
+}
+biggo_base_url = "https://biggo.com.tw/s/"
+
+
+def get_url_by_goods_name(goods_name, ec):
+    """組成類似像是 https://biggo.com.tw/s/biore%20%E6%B4%97%E9%9D%A2%E4%B9%B3/?&m=cp&c[]=tw_pec_momoshop 的格式"""
+    EC = ECs.get(ec)
+    url = f'{biggo_base_url}{goods_name}/?&m=cp&c[]={EC}'
+    return url
 
 
 def wait_until(xpath: str):
@@ -22,54 +33,41 @@ def wait_until(xpath: str):
     )
     return element
 
-try:
-    search_input_field = wait_until("/html/body/div[1]/div[3]/form/div[1]/div[1]/div[1]/div/div[2]/input")
-    search_input_field.send_keys("biggo")
-    google_search_button = wait_until("/html/body/div[1]/div[3]/form/div[1]/div[1]/div[2]/div[2]/div[5]/center/input[1]")
-    google_search_button.click()
-    search_result = wait_until('//h3[@class="LC20lb MBeuO DKV0Md"][text()="比個夠BigGo 比價網- 商品價格搜尋引擎"]')
-    search_result.click()
-    biggo_input = wait_until("/html/body/div[3]/div/div/form/div/input[1]")
-    biggo_input.send_keys("CLIO珂莉奧 凝時美肌防沾染柔霧粉底液 精巧版")
-    biggo_search_button = wait_until("/html/body/div[3]/div/div/form/div/input[2]")
-    biggo_search_button.click()
-    EC_select_momo = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[1]/div/label/span[2]")
-    EC_select_momo.click()
-    EC_select_pc24 = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[4]/div/label/span[2]")
-    EC_select_pc24.click()
-    EC_select_book = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[3]/div/label/span[2]")
-    EC_select_book.click()
-    EC_select_cosmed = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[6]/div/label/span[2]")
-    EC_select_cosmed.click()
-    # EC_select_watsons = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[1]/div[3]/div[7]/div/label/span[2]")
-    # EC_select_watsons.click()
-    EC_search_button = wait_until("/html/body/div[3]/div/div/div[2]/div[2]/div[1]/div/div/div[2]/div[2]/div")
-    EC_search_button.click()
 
+def get_goods_name(brand, item_name):
+    goods_name = f'{brand} {item_name}'
+    return goods_name
+
+
+def get_goods_info(url):
+    EC = ""
+    name = ""
+    price = ""
+    driver.get(url)
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
-    response = requests.get(driver.current_url,headers=headers)
+    response = requests.get(driver.current_url, headers=headers)
     cosmetic_list = []
     soup = BeautifulSoup(response.text, 'lxml')
 
     btn_dropdowns = soup.find_all('div', 'multple_spec_btn _dropdown ml10')
-    if btn_dropdowns != None:
-        for btn_dropdown in btn_dropdowns:
-            muti_dropdown_btn = wait_until("/html/body/div[3]/div/div/div[2]/div[1]/div[3]/div[1]/div/div[2]/div[2]/div[1]/div")
-            muti_dropdown_btn.click()
-        response = requests.get(driver.current_url, headers=headers)
-        soup = BeautifulSoup(response.text, 'lxml')
+    if btn_dropdowns != []:
+        muti_dropdown_btn = wait_until("/html/body/div[3]/div/div/div[2]/div[1]/div[3]/div[1]/div/div[2]/div[2]/div[1]/div")
+        muti_dropdown_btn.click()
+        time.sleep(1)
+        soup = BeautifulSoup(driver.page_source, 'lxml')
 
     info_items = soup.find_all('div', 'col-12 product-row')
     for item in info_items:
-        muti_btn = item.find('div', 'multple_spec_btn _dropdown ml10')
+        muti_btn = item.find('div', 'multple_spec_dropdown d-block _dropdown-menu')
         if muti_btn != None:
             main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-            price = item.find('div', 'multple_spec_dropdown d-block _dropdown-menu','m_title_price')
-            sub_name = item.find('div','onerow' ,'tags')
+            price = muti_btn.find('div', 'onerow').text.split(' ')[1]
+            sub_name = muti_btn.find('div', 'onerow').text.split(' ')[0]
             EC = item.find('div', 'store-name-wrap', 'store').text.strip()
-            cosmetic_info = dict(品名=sub_name, 價格=price, 通路=EC)
+            name = main_name,sub_name
+            cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
             cosmetic_list.append(cosmetic_info)
         else:
             name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
@@ -77,10 +75,29 @@ try:
             EC = item.find('div', 'store-name-wrap', 'store').text.strip()
             cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
             cosmetic_list.append(cosmetic_info)
-    #    movie.execute('INSERT INTO MOVIE_INFO VALUES(?,?,?)', (name,english_name,release_time))
-    #    conn.commit()
-    #    print('{}({}) 上映日：{}'.format(name, english_name, release_time))
 
-    print(cosmetic_list)
+    for i in cosmetic_list:
+        print(i)
+    # print(cosmetic_list)
+    return EC, name, price
+
+# input? user 要如何提供 ec brand item_name 這些資訊
+# output? 請 user 提供 excel sample
+
+# 當多個 ec 時要如何處理
+
+items = [
+    {'ec': "momo", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
+    {'ec': "pchome", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"}
+]
+
+try:
+    for item in items:
+        goods_name = get_goods_name(item['brand'], item['item_name'])
+        #print(goods_name)
+        url = get_url_by_goods_name(goods_name, item['ec'])
+        EC, name, price = get_goods_info(url)
+
+        print(EC, name, price)
 finally:
-    print("Done")
+    driver.close()
