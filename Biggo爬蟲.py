@@ -6,6 +6,9 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import sqlite3
+from lxml import etree
+from urllib.request import urlopen
+
 
 options = Options()
 options.add_argument("--disable-notifications")
@@ -50,8 +53,12 @@ def get_goods_info(url):
     response = requests.get(driver.current_url, headers=headers)
     cosmetic_list = []
     soup = BeautifulSoup(response.text, 'lxml')
-
-    btn_dropdowns = soup.find_all('div', 'multple_spec_btn _dropdown ml10')
+    htmlparser = etree.HTMLParser()
+    url = driver.current_url
+    response = urlopen(url)
+    tree = etree.parse(response, htmlparser)
+    xpathselector = "(//div[@class='d-flex w100'])[1]//div[@class='multple_spec_btn _dropdown ml10']"  # 第一個品項的下拉選單
+    btn_dropdowns = tree.xpath(xpathselector)
     if btn_dropdowns != []:
         muti_dropdown_btn = wait_until("/html/body/div[3]/div/div/div[2]/div[1]/div[3]/div[1]/div/div[2]/div[2]/div[1]/div")
         muti_dropdown_btn.click()
@@ -61,14 +68,15 @@ def get_goods_info(url):
     info_items = soup.find_all('div', 'col-12 product-row')
     for item in info_items:
         muti_btn = item.find('div', 'multple_spec_dropdown d-block _dropdown-menu')
-        if muti_btn != None:
-            main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-            price = muti_btn.find('div', 'onerow').text.split(' ')[1]
-            sub_name = muti_btn.find('div', 'onerow').text.split(' ')[0]
-            EC = item.find('div', 'store-name-wrap', 'store').text.strip()
-            name = main_name,sub_name
-            cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
-            cosmetic_list.append(cosmetic_info)
+        if muti_btn is not None:
+            for btn in muti_btn:
+                main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
+                price = btn.text.split(' ')[1]
+                sub_name = btn.text.split(' ')[0]
+                EC = item.find('div', 'store-name-wrap', 'store').text.strip()
+                name = main_name, sub_name
+                cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
+                cosmetic_list.append(cosmetic_info)
         else:
             name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
             price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
@@ -88,7 +96,9 @@ def get_goods_info(url):
 
 items = [
     {'ec': "momo", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
-    {'ec': "pchome", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"}
+    {'ec': "pchome", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
+    {'ec': "pchome", 'brand': "biore", 'item_name': "沐浴乳"},
+    {'ec': "momo", 'brand': "biore", 'item_name': "沐浴乳"},
 ]
 
 try:
@@ -98,6 +108,6 @@ try:
         url = get_url_by_goods_name(goods_name, item['ec'])
         EC, name, price = get_goods_info(url)
 
-        print(EC, name, price)
+        # print(EC, name, price)
 finally:
     driver.close()
