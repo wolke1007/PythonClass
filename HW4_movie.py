@@ -4,10 +4,10 @@ import sqlite3
 
 conn = sqlite3.connect('movie_info.db')
 
-# conn.execute('''CREATE TABLE MOVIE_INFO
-# (MOVIE_CHINESE_NAME TEXT    NOT NULL,
-# MOVIE_FOREIGN_NAME  TEXT    NOT NULL,
-# COMING_TIME         TEXT    NOT NULL);''')
+conn.execute('''CREATE TABLE MOVIE_INFO
+ (MOVIE_CHINESE_NAME TEXT    NOT NULL,
+ MOVIE_FOREIGN_NAME  TEXT    NOT NULL,
+ COMING_TIME         TEXT    NOT NULL);''')
 
 movie = conn.cursor()
 response = requests.get("https://movies.yahoo.com.tw/movie_intheaters.html")
