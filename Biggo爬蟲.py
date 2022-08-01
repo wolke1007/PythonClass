@@ -2,12 +2,12 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
-import requests
 from bs4 import BeautifulSoup
-import sqlite3
 from lxml import etree
 from urllib.request import urlopen
+import time
+import requests
+
 
 
 options = Options()
@@ -47,27 +47,34 @@ def get_goods_info(url):
     name = ""
     price = ""
     driver.get(url)
-
+    action = webdriver.ActionChains(driver)
+    cosmetic_list = []
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"}
     response = requests.get(driver.current_url, headers=headers)
-    cosmetic_list = []
     soup = BeautifulSoup(response.text, 'lxml')
+
+    total_items = soup.find_all('div', 'col-12 product-row')
+    var = "1"
     htmlparser = etree.HTMLParser()
-    url = driver.current_url
-    response = urlopen(url)
+    #url = driver.current_url
+    response = urlopen(driver.current_url) #原本是url
     tree = etree.parse(response, htmlparser)
-    xpathselector = "(//div[@class='d-flex w100'])[1]//div[@class='multple_spec_btn _dropdown ml10']"  # 第一個品項的下拉選單
-    btn_dropdowns = tree.xpath(xpathselector)
-    if btn_dropdowns != []:
-        muti_dropdown_btn = wait_until("/html/body/div[3]/div/div/div[2]/div[1]/div[3]/div[1]/div/div[2]/div[2]/div[1]/div")
-        muti_dropdown_btn.click()
-        time.sleep(1)
-        soup = BeautifulSoup(driver.page_source, 'lxml')
+    #xpathselector = "(//div[@class='d-flex w100'])[1]//div[@class='multple_spec_btn _dropdown ml10']"  # 第一個品項的下拉選單
+    for index, each_item in enumerate(total_items, start=1):
+        str_index = str(index)
+        btn_dropdowns = tree.xpath("(//div[@class='d-flex w100'])[" + str_index + "]//div[@class='multple_spec_btn _dropdown ml10']")
+        if btn_dropdowns != []:
+            muti_dropdown_btn = wait_until("(//div[@class='d-flex w100'])[" + str_index + "]//div[@class='multple_spec_btn _dropdown ml10']")
+            action.move_to_element(muti_dropdown_btn)
+            muti_dropdown_btn.click()
+            time.sleep(0.5)
+
+    soup = BeautifulSoup(driver.page_source, 'lxml')
 
     info_items = soup.find_all('div', 'col-12 product-row')
     for item in info_items:
-        muti_btn = item.find('div', 'multple_spec_dropdown d-block _dropdown-menu')
+        muti_btn = item.find('div', 'multple_spec_dropdown _dropdown-menu')
         if muti_btn is not None:
             for btn in muti_btn:
                 main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
@@ -95,10 +102,11 @@ def get_goods_info(url):
 # 當多個 ec 時要如何處理
 
 items = [
-    {'ec': "momo", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
-    {'ec': "pchome", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
-    {'ec': "pchome", 'brand': "biore", 'item_name': "沐浴乳"},
-    {'ec': "momo", 'brand': "biore", 'item_name': "沐浴乳"},
+    # {'ec': "momo", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
+    # {'ec': "pchome", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
+    # {'ec': "pchome", 'brand': "biore", 'item_name': "沐浴乳"},
+    # {'ec': "momo", 'brand': "biore", 'item_name': "沐浴乳"},
+    {'ec': "momo", 'brand': "羅技", 'item_name': "滑鼠"}
 ]
 
 try:
