@@ -7,8 +7,9 @@ from lxml import etree
 from urllib.request import urlopen
 import time
 import requests
+import pandas as pd
 
-
+df = pd.read_excel("EC商品價格檢查表_CLIO.xlsx", names= ['中文名', ' ', 'CSM EC', 'WTS EC', 'MOMO', 'PCHome', 'Books', '蝦皮']) #讀取excel檔案,重新命名row name
 
 options = Options()
 options.add_argument("--disable-notifications")
@@ -17,8 +18,11 @@ options.add_argument("--disable-notifications")
 driver = webdriver.Chrome('./chromedriver', chrome_options=options)
 
 ECs = {  # 所有通路
+    'CSM EC' : 'tw_ec_cosmed',
+    'WTS EC' : 'tw_ec_watsons',
+    'momo': "tw_pec_momoshop",
     'pchome':  "tw_ec_pchome24h",
-    'momo': "tw_pec_momoshop"
+    'Books' : 'tw_pec_books'
 }
 biggo_base_url = "https://biggo.com.tw/s/"
 
@@ -37,8 +41,8 @@ def wait_until(xpath: str):
     return element
 
 
-def get_goods_name(brand, item_name):
-    goods_name = f'{brand} {item_name}'
+def get_goods_name(item_name):
+    goods_name = f'{item_name}'
     return goods_name
 
 
@@ -69,30 +73,34 @@ def get_goods_info(url):
             action.move_to_element(muti_dropdown_btn)
             muti_dropdown_btn.click()
             time.sleep(0.5)
+            muti_dropdown_btn.click()
 
     soup = BeautifulSoup(driver.page_source, 'lxml')
 
     info_items = soup.find_all('div', 'col-12 product-row')
-    for item in info_items:
-        muti_btn = item.find('div', 'multple_spec_dropdown _dropdown-menu')
-        if muti_btn is not None:
-            for btn in muti_btn:
-                main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-                price = btn.text.split(' ')[1]
-                sub_name = btn.text.split(' ')[0]
+    if info_items == []:
+        EC='找不到!!!'
+    else:
+        for item in info_items:
+            muti_btn = item.find('div', 'multple_spec_dropdown _dropdown-menu')
+            if muti_btn is not None:
+                for btn in muti_btn:
+                    main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
+                    price = btn.text.split(' ')[1]
+                    sub_name = btn.text.split(' ')[0]
+                    EC = item.find('div', 'store-name-wrap', 'store').text.strip()
+                    name = main_name, sub_name
+                    cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
+                    cosmetic_list.append(cosmetic_info)
+            else:
+                name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
+                price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
                 EC = item.find('div', 'store-name-wrap', 'store').text.strip()
-                name = main_name, sub_name
                 cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
                 cosmetic_list.append(cosmetic_info)
-        else:
-            name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-            price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
-            EC = item.find('div', 'store-name-wrap', 'store').text.strip()
-            cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
-            cosmetic_list.append(cosmetic_info)
 
-    for i in cosmetic_list:
-        print(i)
+    # for i in cosmetic_list:
+    #     print(i)
     # print(cosmetic_list)
     return EC, name, price
 
@@ -101,21 +109,17 @@ def get_goods_info(url):
 
 # 當多個 ec 時要如何處理
 
-items = [
-    # {'ec': "momo", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
-    # {'ec': "pchome", 'brand': "CLIO珂莉奧", 'item_name': "凝時美肌防沾染柔霧粉底液 精巧版"},
-    # {'ec': "pchome", 'brand': "biore", 'item_name': "沐浴乳"},
-    # {'ec': "momo", 'brand': "biore", 'item_name': "沐浴乳"},
-    {'ec': "momo", 'brand': "羅技", 'item_name': "滑鼠"}
-]
+items = []
+for goods_index in range(1,len(df.index)):      #取出所有品名
+    goods_name = df.at[goods_index, '中文名']
+    items.append(goods_name)
 
 try:
-    for item in items:
-        goods_name = get_goods_name(item['brand'], item['item_name'])
-        #print(goods_name)
-        url = get_url_by_goods_name(goods_name, item['ec'])
-        EC, name, price = get_goods_info(url)
+    for item_name in items:
+        for ec in ECs:
+            url = get_url_by_goods_name(item_name, ec)
+            EC, name, price = get_goods_info(url)
+            print(goods_name, EC, price)
 
-        # print(EC, name, price)
 finally:
     driver.close()
