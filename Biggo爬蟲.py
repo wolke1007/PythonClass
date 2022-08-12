@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from lxml import etree
@@ -20,7 +21,7 @@ driver = webdriver.Chrome('./chromedriver', chrome_options=options)
 ECs = {  # 所有通路(momo除外)
     'CSM EC' : 'tw_ec_cosmed',
     'WTS EC' : 'tw_ec_watsons',
-    'pchome':  "tw_ec_pchome24h",
+    'PCHome':  "tw_ec_pchome24h",
     'Books' : 'tw_pec_books'
 }
 biggo_base_url = "https://biggo.com.tw/s/"
@@ -28,8 +29,8 @@ biggo_base_url = "https://biggo.com.tw/s/"
 
 def get_url_by_goods_name(goods_name, ec):
     """組成類似像是 https://biggo.com.tw/s/biore%20%E6%B4%97%E9%9D%A2%E4%B9%B3/?&m=cp&c[]=tw_pec_momoshop 的格式"""
-    EC = ECs.get(ec)
-    url = f'{biggo_base_url}{goods_name}/?&m=cp&c[]={EC}'
+    EC_name = ECs.get(ec)
+    url = f'{biggo_base_url}{goods_name}/?&m=cp&c[]={EC_name}'
     return url
 
 def get_momo_url_by_goods_name(goods_name):
@@ -52,7 +53,7 @@ def get_goods_name(item_name):
 
 
 def get_goods_info(url):
-    EC = ""
+    EC_name = ""
     name = ""
     price = ""
     driver.get(url)
@@ -63,7 +64,7 @@ def get_goods_info(url):
     response = requests.get(driver.current_url, headers=headers)
     soup = BeautifulSoup(response.text, 'lxml')
 
-    total_items = soup.find_all('div', 'col-12 product-row')
+    total_items = soup.find_all('div', 'product-row')
     htmlparser = etree.HTMLParser()
     #url = driver.current_url
     response = urlopen(driver.current_url) #原本是url
@@ -82,29 +83,29 @@ def get_goods_info(url):
 
     soup = BeautifulSoup(driver.page_source, 'lxml')
 
-    info_items = soup.find_all('div', 'col-12 product-row')
+    info_items = soup.find_all('div', 'product-row')
     if info_items == []:
-        EC='找不到!!!'
+        EC_name='找不到!!!'
     else:
         for item in info_items:
             muti_btn = item.find('div', 'multple_spec_dropdown _dropdown-menu')
             if muti_btn is not None:
                 for btn in muti_btn:
                     main_name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
-                    price = btn.text.split(' ')[1]
+                    price = btn.text.split(' ')[-1]
                     sub_name = btn.text.split(' ')[0]
-                    EC = item.find('div', 'store-name-wrap', 'store').text.strip()
+                    EC_name = item.find('div', 'store-name-wrap', 'store').text.strip()
                     name = main_name, sub_name
-                    cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
+                    cosmetic_info = dict(品名=name, 價格=price, 通路=EC_name)
                     cosmetic_list.append(cosmetic_info)
             else:
                 name = item.find('div', 'list-product-name line-clamp-2').a.text.strip()
                 price = item.find('div', 'd-flex flex-wrap align-items-center', 'price').a.text.strip()
-                EC = item.find('div', 'store-name-wrap', 'store').text.strip()
-                cosmetic_info = dict(品名=name, 價格=price, 通路=EC)
+                EC_name = item.find('div', 'store-name-wrap', 'store').text.strip()
+                cosmetic_info = dict(品名=name, 價格=price, 通路=EC_name)
                 cosmetic_list.append(cosmetic_info)
 
-    return EC, name, price
+    return EC_name, name, price
 
 items = []
 def get_items_name_from_df(df):
@@ -117,21 +118,28 @@ items_momo=[]
 def get_items_name_from_df_for_momo(df):
     for goods_index in range(1,len(df.index)):      #取出所有品名
         goods_name = df.at[goods_index, '中文名']
-        items_momo.append(goods_name[0:-7])
+        if "01" in goods_name or "02" in goods_name or "03" in goods_name or "04" in goods_name or "05" in goods_name or "06" in goods_name or "07" in goods_name or "08" in goods_name or "09" in goods_name or "10" in goods_name or "11" in goods_name or "12" in goods_name or "13" in goods_name or "14" in goods_name or "15" in goods_name or "自然色" in goods_name or "明亮色" in goods_name or " 1" in goods_name or " 2" in goods_name:
+            items_momo.append(goods_name[0:-7])
+        else:
+            items_momo.append(goods_name)
     return items_momo
 
 try:
     get_items_name_from_df(df)
-    for item_name in items:
+    for item_index, item_name in enumerate(items, start=1):
         for ec in ECs:
             url = get_url_by_goods_name(item_name, ec)
-            EC, name, price = get_goods_info(url)
-            print(name, EC, price)
+            EC_name, name, price = get_goods_info(url)
+            df.at[item_index, ec] = price
+            print(name, EC_name, price)
     get_items_name_from_df_for_momo(df)
-    for item_name in items_momo:
+    for item_index, item_name in enumerate(items_momo, start=1):
         url = get_momo_url_by_goods_name(item_name)
-        EC, name, price = get_goods_info(url)
-        print(name, EC, price)
+        EC_name, name, price = get_goods_info(url)
+        df.at[item_index, 'MOMO'] = price
+        print(name, EC_name, price)
 
 finally:
     driver.close()
+
+print(df)
